@@ -20,15 +20,14 @@ def main():
 
 @bot.command(name='play', aliases=['p'])
 async def play(ctx: commands.Context, *args):
-    query = ' '.join(args)
-
-    # this is how it's determined if the url is valid (i.e. whether to search or not) under the hood of yt-dlp
-    will_need_search = not urllib.parse.urlparse(query).scheme
-
     voice_state = ctx.author.voice 
     if voice_state is None:
-        await ctx.send('you have to be in a voice_state to play something')
+        await ctx.send('you have to be in a vc to play something')
         return
+
+    query = ' '.join(args)
+    # this is how it's determined if the url is valid (i.e. whether to search or not) under the hood of yt-dlp
+    will_need_search = not urllib.parse.urlparse(query).scheme
 
     server_id = ctx.guild.id
 
@@ -53,26 +52,35 @@ async def play(ctx: commands.Context, *args):
         
         path = f'./dl/{server_id}/{info["id"]}.{info["ext"]}'
         try: queues[server_id].append(path)
-        except KeyError:
+        except KeyError: # first in queue
             queues[server_id] = [path]
-            connection = await voice_state.channel.connect()
+            try: connection = await voice_state.channel.connect()
+            except discord.ClientException: connection = get_voice_client_from_channel_id(voice_state.channel.id)
             connection.play(discord.FFmpegOpusAudio(path), after=lambda error=None, connection=connection, server_id=server_id:
                                                              after_track(error, connection, server_id))
+
+def get_voice_client_from_channel_id(channel_id: int):
+    for voice_client in bot.voice_clients:
+        if voice_client.channel.id == channel_id:
+            return voice_client
 
 def after_track(error, connection, server_id):
     if error is not None:
         print(error)
-    path = queues[server_id].pop(0)
+    try: path = queues[server_id].pop(0)
+    except KeyError: return # probably got disconnected
     if path not in queues[server_id]: # check that the same video isn't queued multiple times
         try: os.remove(path)
         except FileNotFoundError: pass
     try: connection.play(discord.FFmpegOpusAudio(queues[server_id][0]))
-    except IndexError:
-        queues.pop(server_id)
-        try: shutil.rmtree(f'./dl/{server_id}/')
-        except FileNotFoundError: pass
-        bot.loop.create_task(connection.disconnect()) # can't await in a non-async function, can't call callback asynchronously
+    except IndexError: # that was the last item in queue
+        queues.pop(server_id) # directory will be deleted on disconnect
+        asyncio.run_coroutine_threadsafe(safe_disconnect(connection), bot.loop).result()
 
+async def safe_disconnect(connection):
+    if not connection.is_playing():
+        await connection.disconnect()
+        
 @bot.event
 async def on_voice_state_update(member: discord.User, before: discord.VoiceState, after: discord.VoiceState):
     if member != bot.user:
@@ -80,10 +88,10 @@ async def on_voice_state_update(member: discord.User, before: discord.VoiceState
     if before.channel is None and after.channel is not None: # joined vc
         return
     if before.channel is not None and after.channel is None: # disconnected from vc
+        # clean up
         server_id = before.channel.guild.id
         try: queues.pop(server_id)
-        except KeyError: # disconnected itself
-            return
+        except KeyError: pass
         try: shutil.rmtree(f'./dl/{server_id}/')
         except FileNotFoundError: pass
 

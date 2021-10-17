@@ -1,2 +1,4 @@
 token.txt
 dl/*
+ignore/
+__pycache__
