@@ -42,6 +42,11 @@ async def skip(ctx: commands.Context, *args):
         n_skips = queue_length
     await ctx.send(message)
 
+    voice_client = get_voice_client_from_channel_id(ctx.author.voice.channel.id)
+    for _ in range(n_skips - 1):
+        queues[ctx.guild.id].pop(0)
+    voice_client.stop()
+
 @bot.command(name='play', aliases=['p'])
 async def play(ctx: commands.Context, *args):
     voice_state = ctx.author.voice
@@ -95,7 +100,8 @@ def after_track(error, connection, server_id):
     if path not in queues[server_id]: # check that the same video isn't queued multiple times
         try: os.remove(path)
         except FileNotFoundError: pass
-    try: connection.play(discord.FFmpegOpusAudio(queues[server_id][0]))
+    try: connection.play(discord.FFmpegOpusAudio(queues[server_id][0]), after=lambda error=None, connection=connection, server_id=server_id:
+                                                                          after_track(error, connection, server_id))
     except IndexError: # that was the last item in queue
         queues.pop(server_id) # directory will be deleted on disconnect
         asyncio.run_coroutine_threadsafe(safe_disconnect(connection), bot.loop).result()
@@ -110,11 +116,11 @@ async def sense_checks(ctx: commands.Context, voice_state=None) -> bool:
         await ctx.send('you have to be in a vc to use this command')
         return False
 
-    if bot.user.id not in [member.id for member in ctx.author.voice.channel.members] and ctx.guild.id in [voice_client.guild.id for voice_client in bot.voice_clients]:
+    if bot.user.id not in [member.id for member in ctx.author.voice.channel.members] and ctx.guild.id in queues.keys():
         await ctx.send('you have to be in the same vc as the bot to use this command')
         return False
     return True
-    
+
 @bot.event
 async def on_voice_state_update(member: discord.User, before: discord.VoiceState, after: discord.VoiceState):
     if member != bot.user:
