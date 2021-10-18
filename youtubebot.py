@@ -20,9 +20,7 @@ def main():
 
 @bot.command(name='play', aliases=['p'])
 async def play(ctx: commands.Context, *args):
-    voice_state = ctx.author.voice 
-    if voice_state is None:
-        await ctx.send('you have to be in a vc to play something')
+    if not await sense_checks(ctx):
         return
 
     query = ' '.join(args)
@@ -54,6 +52,7 @@ async def play(ctx: commands.Context, *args):
         try: queues[server_id].append(path)
         except KeyError: # first in queue
             queues[server_id] = [path]
+            voice_state = ctx.author.voice 
             try: connection = await voice_state.channel.connect()
             except discord.ClientException: connection = get_voice_client_from_channel_id(voice_state.channel.id)
             connection.play(discord.FFmpegOpusAudio(path), after=lambda error=None, connection=connection, server_id=server_id:
@@ -81,6 +80,17 @@ async def safe_disconnect(connection):
     if not connection.is_playing():
         await connection.disconnect()
         
+async def sense_checks(ctx: commands.Context) -> bool:
+    voice_state = ctx.author.voice 
+    if voice_state is None:
+        await ctx.send('you have to be in a vc to use this command')
+        return False
+
+    if bot.user.id not in [member.id for member in ctx.author.voice.channel.members] and ctx.guild.id in [voice_client.guild.id for voice_client in bot.voice_clients]:
+        await ctx.send('you have to be in the same vc as the bot to use this command')
+        return False
+    return True
+    
 @bot.event
 async def on_voice_state_update(member: discord.User, before: discord.VoiceState, after: discord.VoiceState):
     if member != bot.user:
