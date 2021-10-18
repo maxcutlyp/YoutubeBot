@@ -18,9 +18,34 @@ def main():
         token = lines[0][:-1]
     bot.run(token)
 
+@bot.command(name='skip', aliases=['s'])
+async def skip(ctx: commands.Context, *args):
+    try: queue_length = len(queues[ctx.guild.id])
+    except KeyError: queue_length = 0
+    if queue_length <= 0:
+        await ctx.send('the bot isn\'t playing anything')
+    if not await sense_checks(ctx):
+        return
+
+    try: n_skips = int(args[0])
+    except IndexError:
+        n_skips = 1
+    except ValueError:
+        if args[0] == 'all': n_skips = queue_length
+        else: n_skips = 1
+    if n_skips == 1:
+        message = 'skipping track'
+    elif n_skips < queue_length:
+        message = f'skipping `{n_skips}` of `{queue_length}` tracks'
+    else:
+        message = 'skipping all tracks'
+        n_skips = queue_length
+    await ctx.send(message)
+
 @bot.command(name='play', aliases=['p'])
 async def play(ctx: commands.Context, *args):
-    if not await sense_checks(ctx):
+    voice_state = ctx.author.voice
+    if not await sense_checks(ctx, voice_state=voice_state):
         return
 
     query = ' '.join(args)
@@ -52,7 +77,6 @@ async def play(ctx: commands.Context, *args):
         try: queues[server_id].append(path)
         except KeyError: # first in queue
             queues[server_id] = [path]
-            voice_state = ctx.author.voice 
             try: connection = await voice_state.channel.connect()
             except discord.ClientException: connection = get_voice_client_from_channel_id(voice_state.channel.id)
             connection.play(discord.FFmpegOpusAudio(path), after=lambda error=None, connection=connection, server_id=server_id:
@@ -80,8 +104,8 @@ async def safe_disconnect(connection):
     if not connection.is_playing():
         await connection.disconnect()
         
-async def sense_checks(ctx: commands.Context) -> bool:
-    voice_state = ctx.author.voice 
+async def sense_checks(ctx: commands.Context, voice_state=None) -> bool:
+    if voice_state is None: voice_state = ctx.author.voice 
     if voice_state is None:
         await ctx.send('you have to be in a vc to use this command')
         return False
