@@ -8,6 +8,8 @@ import asyncio
 import threading
 import os
 import shutil
+import sys
+import subprocess as sp
 
 bot = commands.Bot(command_prefix='.')
 queues = {} # {server_id: [vid_file, ...]}
@@ -134,6 +136,12 @@ async def on_voice_state_update(member: discord.User, before: discord.VoiceState
         except KeyError: pass
         try: shutil.rmtree(f'./dl/{server_id}/')
         except FileNotFoundError: pass
+
+@bot.event
+async def on_command_error(event: str, *args, **kwargs):
+    type_, value, traceback = sys.exc_info()
+    sys.stderr.write(f'{type_}: {value} raised during {event}, {args=}, {kwargs=}')
+    sp.run(['./restart'])
 
 
 #def ydl_download_in_new_thread(ydl, query):

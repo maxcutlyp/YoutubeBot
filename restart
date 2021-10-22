@@ -1,0 +1,4 @@
+#!/bin/bash
+
+pkill -f youtubebot;
+./youtubebot.py;
