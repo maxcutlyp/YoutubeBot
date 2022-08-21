@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
-PREFIX = os.getenv('BOT_PREFIX')
+PREFIX = os.getenv('BOT_PREFIX', '.')
 
 #TODO: figure out how to work with limited intents
 # this currently requires the bot to have privileged intents activated in the discord developer portal
@@ -22,6 +22,10 @@ bot = commands.Bot(command_prefix=PREFIX, intents=discord.Intents.all())
 queues = {} # {server_id: [vid_file, ...]}
 
 def main():
+    if TOKEN is None:
+        print("No Token provided. Please create a .env File containing the Token.")
+        print("For more information view the README.md")
+        exit()
     bot.run(TOKEN)
 
 @bot.command(name='skip', aliases=['s'])
