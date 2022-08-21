@@ -10,15 +10,18 @@ import os
 import shutil
 import sys
 import subprocess as sp
+from dotenv import load_dotenv
 
-bot = commands.Bot(command_prefix='.')
+load_dotenv()
+TOKEN = os.getenv('BOT_TOKEN')
+
+#TODO: figure out how to work with limited intents
+# this currently requires the bot to have privileged intents activated in the discord developer portal
+bot = commands.Bot(command_prefix='#', intents=discord.Intents.all())
 queues = {} # {server_id: [vid_file, ...]}
 
 def main():
-    with open('./token.txt') as t:
-        lines = t.readlines()
-        token = lines[0][:-1]
-    bot.run(token)
+    bot.run(TOKEN)
 
 @bot.command(name='skip', aliases=['s'])
 async def skip(ctx: commands.Context, *args):
