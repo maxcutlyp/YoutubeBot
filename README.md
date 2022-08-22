@@ -13,7 +13,7 @@ A word of warning before we start though: you'll need somewhere to host the bot.
 ### Step 1: Creating an empty bot
 1. First, head to Discord's [developer portal](https://discord.com/developers/applications).
 2. Sign in if it asks you to, then you should see a screen with a "New Application" button in the top right corner. Click it.
-3. Give your bot a name - I called mine "YoutubeBot", you can call yours whatever you want. Its this isn't super important, because you'll be giving it a username later.
+3. Give your bot a name - I called mine "YoutubeBot", you can call yours whatever you want. This isn't super important, because you'll be giving it a username later.
 4. After you hit "Create", you should see some general info about your bot. You can edit this if you want - give it a name, profile picture, about me, etc - use the profile picture in this repo if you want, or make your own, or don't bother.
 5. There should be a sidebar with a "Bot" as an option. Go there, and hit the "Add Bot" button.
 6. From here you can give it a username. This is what it will show up as in your server. Make sure to save your changes!
