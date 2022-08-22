@@ -143,48 +143,6 @@ async def on_command_error(event: str, *args, **kwargs):
     sys.stderr.write(f'{type_}: {value} raised during {event}, {args=}, {kwargs=}')
     sp.run(['./restart'])
 
-
-#def ydl_download_in_new_thread(ydl, query):
-#    def run_in_asyncio_loop(ydl, query):
-#        loop = asyncio.new_event_loop()
-#        asyncio.set_event_loop(loop)
-#        loop.run_until_complete(async_ydl_download(ydl, query))
-#        loop.close()
-#
-#    async def async_ydl_download(ydl, query):
-#        ydl.download([query])
-#
-#    threading.Thread(target=run_in_asyncio_loop, args=(ydl, query)).start()
-
-#def start_hook(ctx, info: dict, incomplete: bool, will_need_search: bool):
-#    if incomplete:
-#        return
-#    if will_need_search:
-#        # send link as input was a search
-#        message = f'Downloading https://youtu.be/{info["id"]}'
-#    else:
-#        # send title as link has already been sent, sending again would clutter chat with previews
-#        message = f'Downloading `{info["title"]}`'
-#    # everything else works but this is incredibly slow for some reason
-#    bot.loop.create_task(ctx.send(message))
-
-#def send_message_in_new_thread(ctx, message):
-#    def run_in_asyncio_loop(ctx, message):
-#        loop = asyncio.new_event_loop()
-#        asyncio.set_event_loop(loop)
-#        loop.run_until_complete(ctx.send(message))
-#        loop.close()
-#    threading.Thread(target=run_in_asyncio_loop, args=(ctx, message)).start()
-
-# would use progress hooks but yt-dlp expects sync while discord.py uses async.
-# implementation as below (commented) tries to create a task using discord.py's asyncio loop
-# but this only runs after yt-dlp finishes downloading as it is blocking/synchronous on this loop
-#def video_progress_hook(ctx, info: dict):
-#    if info['status'] == 'downloading':
-#        info_dict = info['info_dict']
-#        print(info['elapsed'])
-#        bot.loop.create_task(ctx.send(f'Downloading `{info_dict["title"]}`'))
-
 @bot.event
 async def on_ready():
     print(f'logged in successfully as {bot.user.name}')
