@@ -16,17 +16,16 @@ load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
 PREFIX = os.getenv('BOT_PREFIX', '.')
 
-#TODO: figure out how to work with limited intents
-# this currently requires the bot to have privileged intents activated in the discord developer portal
-bot = commands.Bot(command_prefix=PREFIX, intents=discord.Intents.all())
+bot = commands.Bot(command_prefix=PREFIX, intents=discord.Intents(voice_states=True, guilds=True, guild_messages=True, message_content=True))
 queues = {} # {server_id: [vid_file, ...]}
 
 def main():
     if TOKEN is None:
-        print("No Token provided. Please create a .env File containing the Token.")
-        print("For more information view the README.md")
-        exit()
-    bot.run(TOKEN)
+        return ("No Token provided. Please create a .env File containing the Token.\n"
+                "For more information view the README.md")
+    try: bot.run(TOKEN)
+    except discord.PrivilegedIntentsRequired as error:
+        return error
 
 @bot.command(name='skip', aliases=['s'])
 async def skip(ctx: commands.Context, *args):
@@ -156,4 +155,7 @@ async def on_ready():
     print(f'logged in successfully as {bot.user.name}')
 
 if __name__ == '__main__':
-    main()
+    try:
+        sys.exit(main())
+    except SystemError as error:
+        print(error)
