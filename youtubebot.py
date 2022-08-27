@@ -19,6 +19,7 @@ PRINT_STACK_TRACE = os.getenv('PRINT_STACK_TRACE', '1').lower() in ('true', 't',
 
 bot = commands.Bot(command_prefix=PREFIX, intents=discord.Intents(voice_states=True, guilds=True, guild_messages=True, message_content=True))
 queues = {} # {server_id: [vid_file, ...]}
+            # {server_id: [(vid_file, info), ...]}
 
 def main():
     if TOKEN is None:
@@ -27,6 +28,20 @@ def main():
     try: bot.run(TOKEN)
     except discord.PrivilegedIntentsRequired as error:
         return error
+
+@bot.command(name='queue', aliases=['q'])
+async def queue(ctx: commands.Context, *args):
+    try: queue = queues[ctx.guild.id]
+    except KeyError: queue = None
+    if queue == None:
+        await ctx.send('the bot isn\'t playing anything')
+    else:
+        lst = ''
+        for song in queue:
+            lst
+        await ctx.send('there are %d songs in the queue:\n%s')
+    if not await sense_checks(ctx):
+        return
 
 @bot.command(name='skip', aliases=['s'])
 async def skip(ctx: commands.Context, *args):
@@ -89,7 +104,7 @@ async def play(ctx: commands.Context, *args):
         ydl.download([query])
         
         path = f'./dl/{server_id}/{info["id"]}.{info["ext"]}'
-        try: queues[server_id].append(path)
+        try: queues[server_id].append((path, info))
         except KeyError: # first in queue
             queues[server_id] = [path]
             try: connection = await voice_state.channel.connect()
