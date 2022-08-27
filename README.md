@@ -17,6 +17,7 @@ A word of warning before we start though: you'll need somewhere to host the bot.
 4. After you hit "Create", you should see some general info about your bot. You can edit this if you want - give it a name, profile picture, about me, etc - use the profile picture in this repo if you want, or make your own, or don't bother.
 5. There should be a sidebar with a "Bot" as an option. Go there, and hit the "Add Bot" button.
 6. From here you can give it a username. This is what it will show up as in your server. Make sure to save your changes!
+7. On this page activate the 'Message Content Intent' toggel. This is so the bot can read the content of the messages.
 
 ### Step 2: Adding it to your server
 1. Now that you have a bot, it's time to add it to your server. Go to the "OAuth2" page from the same sidebar.
@@ -28,9 +29,10 @@ A word of warning before we start though: you'll need somewhere to host the bot.
 2. Download the code. You can do this by downloading the zip and unzipping it, or with a `git clone` command, or however you prefer to get GitHub content.
 3. Make sure you have Python 3.10 installed.
 4. `cd` to wherever you downloaded the code to, and run `pip install -r requirements.txt`. Note that some systems will use `pip3` or `pip3.10` - use the one that contains `(python 3.10)` when you run it with `--version`.
-5. Head back to the "Bot" page. There should be a "Copy" button under a "Token" section, which you should click. This will copy your bot's unique token so that the code can identify itself as the bot you've just created.
-6. Copy the file ".env_example" to ".env" and replace "your-token-goes-here" by the token you just copied.
-7. Run `nohup ./youtubebot.py &`. If you get an error along the lines of "permission denied" or "not executable", run `chmod +x youtubebot.py` to make it executable and try again.
-8. The bot is now running in the background. To stop it, run `pkill -f youtubebot.py`
+5. Copy the file ".env_example" to ".env"
+6. Head back to the "Bot" page. There should be a "Copy" button under a "Token" section, which you should click. This will copy your bot's unique token so that the code can identify itself as the bot you've just created.
+7. Edit ".env" and replace "your-token-goes-here" with the token you just copied.
+8. Run `nohup ./youtubebot.py &`. If you get an error along the lines of "permission denied" or "not executable", run `chmod +x youtubebot.py` to make it executable and try again.
+9. The bot is now running in the background. To stop it, run `pkill -f youtubebot.py`
 
 Congrats! You should now be able to use the bot by joining a VC and using the commands above. If not, let me know and I'll try to help as best I can.
