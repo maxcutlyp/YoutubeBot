@@ -1,3 +1,4 @@
 discord.py
 pynacl
 yt_dlp
+python-dotenv
