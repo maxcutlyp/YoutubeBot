@@ -16,8 +16,8 @@ A word of warning before we start though: you'll need somewhere to host the bot.
 3. Give your bot a name - I called mine "YoutubeBot", you can call yours whatever you want. This isn't super important, because you'll be giving it a username later.
 4. After you hit "Create", you should see some general info about your bot. You can edit this if you want - give it a name, profile picture, about me, etc - use the profile picture in this repo if you want, or make your own, or don't bother.
 5. There should be a sidebar with a "Bot" as an option. Go there, and hit the "Add Bot" button.
-6. From here you can give it a username. This is what it will show up as in your server. Make sure to save your changes!
-7. On this page activate the 'Message Content Intent' toggel. This is so the bot can read the content of the messages.
+6. From here you can give it a username. This is what it will show up as in your server.
+7. On this page activate the "Message Content Intent" toggle. This is so the bot can read the content of the commands. Make sure to save your changes!
 
 ### Step 2: Adding it to your server
 1. Now that you have a bot, it's time to add it to your server. Go to the "OAuth2" page from the same sidebar.

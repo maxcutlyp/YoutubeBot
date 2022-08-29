@@ -15,13 +15,14 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
 PREFIX = os.getenv('BOT_PREFIX', '.')
+PRINT_STACK_TRACE = os.getenv('PRINT_STACK_TRACE', '1').lower() in ('true', 't', '1')
 
 bot = commands.Bot(command_prefix=PREFIX, intents=discord.Intents(voice_states=True, guilds=True, guild_messages=True, message_content=True))
 queues = {} # {server_id: [vid_file, ...]}
 
 def main():
     if TOKEN is None:
-        return ("No Token provided. Please create a .env File containing the Token.\n"
+        return ("No token provided. Please create a .env file containing the token.\n"
                 "For more information view the README.md")
     try: bot.run(TOKEN)
     except discord.PrivilegedIntentsRequired as error:
@@ -158,4 +159,7 @@ if __name__ == '__main__':
     try:
         sys.exit(main())
     except SystemError as error:
-        print(error)
+        if PRINT_STACK_TRACE:
+            raise
+        else:
+            print(error)
