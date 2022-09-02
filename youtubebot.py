@@ -24,8 +24,7 @@ except ValueError:
     COLOR = 0xff0000
 
 bot = commands.Bot(command_prefix=PREFIX, intents=discord.Intents(voice_states=True, guilds=True, guild_messages=True, message_content=True))
-queues = {} # {server_id: [vid_file, ...]}
-            # {server_id: [(vid_file, info), ...]}
+queues = {} # {server_id: [(vid_file, info), ...]}
 
 def main():
     if TOKEN is None:
