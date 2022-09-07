@@ -16,9 +16,15 @@ load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
 PREFIX = os.getenv('BOT_PREFIX', '.')
 PRINT_STACK_TRACE = os.getenv('PRINT_STACK_TRACE', '1').lower() in ('true', 't', '1')
+try:
+    COLOR = int(os.getenv('BOT_COLOR', 'ff0000'), 16)
+except ValueError:
+    print('the BOT_COLOR in .env is not a valid hex color')
+    print('using default color ff0000')
+    COLOR = 0xff0000
 
 bot = commands.Bot(command_prefix=PREFIX, intents=discord.Intents(voice_states=True, guilds=True, guild_messages=True, message_content=True))
-queues = {} # {server_id: [vid_file, ...]}
+queues = {} # {server_id: [(vid_file, info), ...]}
 
 def main():
     if TOKEN is None:
@@ -27,6 +33,21 @@ def main():
     try: bot.run(TOKEN)
     except discord.PrivilegedIntentsRequired as error:
         return error
+
+@bot.command(name='queue', aliases=['q'])
+async def queue(ctx: commands.Context, *args):
+    try: queue = queues[ctx.guild.id]
+    except KeyError: queue = None
+    if queue == None:
+        await ctx.send('the bot isn\'t playing anything')
+    else:
+        title_str = lambda val: '‣ %s\n\n' % val[1] if val[0] == 0 else '**%2d:** %s\n' % val
+        queue_str = ''.join(map(title_str, enumerate([i[1]["title"] for i in queue])))
+        embedVar = discord.Embed(color=COLOR)
+        embedVar.add_field(name='Now playing:', value=queue_str)
+        await ctx.send(embed=embedVar)
+    if not await sense_checks(ctx):
+        return
 
 @bot.command(name='skip', aliases=['s'])
 async def skip(ctx: commands.Context, *args):
@@ -89,9 +110,9 @@ async def play(ctx: commands.Context, *args):
         ydl.download([query])
         
         path = f'./dl/{server_id}/{info["id"]}.{info["ext"]}'
-        try: queues[server_id].append(path)
+        try: queues[server_id].append((path, info))
         except KeyError: # first in queue
-            queues[server_id] = [path]
+            queues[server_id] = [(path, info)]
             try: connection = await voice_state.channel.connect()
             except discord.ClientException: connection = get_voice_client_from_channel_id(voice_state.channel.id)
             connection.play(discord.FFmpegOpusAudio(path), after=lambda error=None, connection=connection, server_id=server_id:
@@ -105,12 +126,12 @@ def get_voice_client_from_channel_id(channel_id: int):
 def after_track(error, connection, server_id):
     if error is not None:
         print(error)
-    try: path = queues[server_id].pop(0)
+    try: path = queues[server_id].pop(0)[0]
     except KeyError: return # probably got disconnected
-    if path not in queues[server_id]: # check that the same video isn't queued multiple times
+    if path not in [i[0] for i in queues[server_id]]: # check that the same video isn't queued multiple times
         try: os.remove(path)
         except FileNotFoundError: pass
-    try: connection.play(discord.FFmpegOpusAudio(queues[server_id][0]), after=lambda error=None, connection=connection, server_id=server_id:
+    try: connection.play(discord.FFmpegOpusAudio(queues[server_id][0][0]), after=lambda error=None, connection=connection, server_id=server_id:
                                                                           after_track(error, connection, server_id))
     except IndexError: # that was the last item in queue
         queues.pop(server_id) # directory will be deleted on disconnect
