@@ -1,0 +1,9 @@
+[Unit]
+Description=Discord youtube bot
+
+[Service]
+# You can use %h/<path> for substitution to the home directory
+ExecStart=/usr/bin/env python %h/YoutubeBot/youtubebot.py
+
+[Install]
+WantedBy=default.target
