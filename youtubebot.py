@@ -1,5 +1,6 @@
 #!/usr/bin/env python3.10
 import re
+
 import discord
 from discord.ext import commands
 import yt_dlp
@@ -178,24 +179,15 @@ async def on_voice_state_update(member: discord.User, before: discord.VoiceState
         except FileNotFoundError: pass
 
 @bot.event
-async def on_command_error(event: str, *args, **kwargs):
-    # test that the exception makes sense
-    if not isinstance(event, discord.ext.commands.context.Context) or len(args) != 1 or not isinstance(args[0], discord.ext.commands.errors.CommandError):
-        type_, value, traceback = sys.exc_info()
-        sys.stderr.write(f'{type_}: {value} raised during {event}, {args=}, {kwargs=}')
-        sp.run(['./restart'])
-        return
-
-    command_exception = args[0]
-
+async def on_command_error(ctx: discord.ext.commands.Context, err: discord.ext.commands.CommandError):
     # now we can handle command errors
-    if isinstance(command_exception, discord.ext.commands.errors.CommandNotFound):
+    if isinstance(err, discord.ext.commands.errors.CommandNotFound):
         if BOT_REPORT_COMMAND_NOT_FOUND:
-            await event.send("Command not recognized. To see available commands type {}help".format(PREFIX))
+            await ctx.send("Command not recognized. To see available commands type {}help".format(PREFIX))
         return
 
     # we ran out of handlable exceptions, re-start. type_ and value are None for these
-    sys.stderr.write(f'unhandled command error raised, {args=}, {kwargs=}')
+    sys.stderr.write(f'unhandled command error raised, {err=}')
     sp.run(['./restart'])
 
 @bot.event
