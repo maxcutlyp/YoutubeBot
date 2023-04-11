@@ -1,4 +1,5 @@
 #!/usr/bin/env python3.10
+import re
 
 import discord
 from discord.ext import commands
@@ -16,6 +17,8 @@ load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
 PREFIX = os.getenv('BOT_PREFIX', '.')
 PRINT_STACK_TRACE = os.getenv('PRINT_STACK_TRACE', '1').lower() in ('true', 't', '1')
+BOT_REPORT_COMMAND_NOT_FOUND = os.getenv('BOT_REPORT_COMMAND_NOT_FOUND', '1').lower() in ('true', 't', '1')
+BOT_REPORT_DL_ERROR = os.getenv('BOT_REPORT_DL_ERROR', '0').lower() in ('true', 't', '1')
 try:
     COLOR = int(os.getenv('BOT_COLOR', 'ff0000'), 16)
 except ValueError:
@@ -28,8 +31,8 @@ queues = {} # {server_id: [(vid_file, info), ...]}
 
 def main():
     if TOKEN is None:
-        return ("No token provided. Please create a .env file containing the token.\n"
-                "For more information view the README.md")
+        return ("no token provided. Please create a .env file containing the token.\n"
+                "for more information view the README.md")
     try: bot.run(TOKEN)
     except discord.PrivilegedIntentsRequired as error:
         return error
@@ -102,12 +105,21 @@ async def play(ctx: commands.Context, *args):
                            # 'progress_hooks': [lambda info, ctx=ctx: video_progress_hook(ctx, info)],
                            # 'match_filter': lambda info, incomplete, will_need_search=will_need_search, ctx=ctx: start_hook(ctx, info, incomplete, will_need_search),
                            'paths': {'home': f'./dl/{server_id}'}}) as ydl:
-        info = ydl.extract_info(query, download=False)
+        try:
+            info = ydl.extract_info(query, download=False)
+        except yt_dlp.utils.DownloadError as err:
+            await notify_about_failure(ctx, err)
+            return
+
         if 'entries' in info:
             info = info['entries'][0]
         # send link if it was a search, otherwise send title as sending link again would clutter chat with previews
         await ctx.send('downloading ' + (f'https://youtu.be/{info["id"]}' if will_need_search else f'`{info["title"]}`'))
-        ydl.download([query])
+        try:
+            ydl.download([query])
+        except yt_dlp.utils.DownloadError as err:
+            await notify_about_failure(ctx, err)
+            return
         
         path = f'./dl/{server_id}/{info["id"]}.{info["ext"]}'
         try: queues[server_id].append((path, info))
@@ -144,11 +156,11 @@ async def safe_disconnect(connection):
 async def sense_checks(ctx: commands.Context, voice_state=None) -> bool:
     if voice_state is None: voice_state = ctx.author.voice 
     if voice_state is None:
-        await ctx.send('you have to be in a vc to use this command')
+        await ctx.send('you have to be in a voice channel to use this command')
         return False
 
     if bot.user.id not in [member.id for member in ctx.author.voice.channel.members] and ctx.guild.id in queues.keys():
-        await ctx.send('you have to be in the same vc as the bot to use this command')
+        await ctx.send('you have to be in the same voice channel as the bot to use this command')
         return False
     return True
 
@@ -167,14 +179,31 @@ async def on_voice_state_update(member: discord.User, before: discord.VoiceState
         except FileNotFoundError: pass
 
 @bot.event
-async def on_command_error(event: str, *args, **kwargs):
-    type_, value, traceback = sys.exc_info()
-    sys.stderr.write(f'{type_}: {value} raised during {event}, {args=}, {kwargs=}')
+async def on_command_error(ctx: discord.ext.commands.Context, err: discord.ext.commands.CommandError):
+    # now we can handle command errors
+    if isinstance(err, discord.ext.commands.errors.CommandNotFound):
+        if BOT_REPORT_COMMAND_NOT_FOUND:
+            await ctx.send("command not recognized. To see available commands type {}help".format(PREFIX))
+        return
+
+    # we ran out of handlable exceptions, re-start. type_ and value are None for these
+    sys.stderr.write(f'unhandled command error raised, {err=}')
     sp.run(['./restart'])
 
 @bot.event
 async def on_ready():
     print(f'logged in successfully as {bot.user.name}')
+async def notify_about_failure(ctx: commands.Context, err: yt_dlp.utils.DownloadError):
+    if BOT_REPORT_DL_ERROR:
+        # remove shell colors for discord message
+        sanitized = re.compile(r'\x1b[^m]*m').sub('', err.msg).strip()
+        if sanitized[0:5].lower() == "error":
+            # if message starts with error, strip it to avoid being redundant
+            sanitized = sanitized[5:].strip(" :")
+        await ctx.send('failed to download due to error: {}'.format(sanitized))
+    else:
+        await ctx.send('sorry, failed to download this video')
+    return
 
 if __name__ == '__main__':
     try:
