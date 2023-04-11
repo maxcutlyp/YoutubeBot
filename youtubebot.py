@@ -42,7 +42,7 @@ async def queue(ctx: commands.Context, *args):
     try: queue = queues[ctx.guild.id]
     except KeyError: queue = None
     if queue == None:
-        await ctx.send('the bot isn\'t playing anything')
+        await ctx.send('The bot isn\'t playing anything')
     else:
         title_str = lambda val: '‣ %s\n\n' % val[1] if val[0] == 0 else '**%2d:** %s\n' % val
         queue_str = ''.join(map(title_str, enumerate([i[1]["title"] for i in queue])))
@@ -57,7 +57,7 @@ async def skip(ctx: commands.Context, *args):
     try: queue_length = len(queues[ctx.guild.id])
     except KeyError: queue_length = 0
     if queue_length <= 0:
-        await ctx.send('the bot isn\'t playing anything')
+        await ctx.send('The bot isn\'t playing anything')
     if not await sense_checks(ctx):
         return
 
@@ -68,11 +68,11 @@ async def skip(ctx: commands.Context, *args):
         if args[0] == 'all': n_skips = queue_length
         else: n_skips = 1
     if n_skips == 1:
-        message = 'skipping track'
+        message = 'Skipping track'
     elif n_skips < queue_length:
-        message = f'skipping `{n_skips}` of `{queue_length}` tracks'
+        message = f'Skipping `{n_skips}` of `{queue_length}` tracks'
     else:
-        message = 'skipping all tracks'
+        message = 'Skipping all tracks'
         n_skips = queue_length
     await ctx.send(message)
 
@@ -95,7 +95,7 @@ async def play(ctx: commands.Context, *args):
 
     # source address as 0.0.0.0 to force ipv4 because ipv6 breaks it for some reason
     # this is equivalent to --force-ipv4 (line 312 of https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/options.py)
-    await ctx.send(f'looking for `{query}`...')
+    await ctx.send(f'Looking for `{query}`...')
     with yt_dlp.YoutubeDL({'format': 'worstaudio',
                            'source_address': '0.0.0.0',
                            'default_search': 'ytsearch',
@@ -156,11 +156,11 @@ async def safe_disconnect(connection):
 async def sense_checks(ctx: commands.Context, voice_state=None) -> bool:
     if voice_state is None: voice_state = ctx.author.voice 
     if voice_state is None:
-        await ctx.send('you have to be in a vc to use this command')
+        await ctx.send('You have to be in a voice channel to use this command')
         return False
 
     if bot.user.id not in [member.id for member in ctx.author.voice.channel.members] and ctx.guild.id in queues.keys():
-        await ctx.send('you have to be in the same vc as the bot to use this command')
+        await ctx.send('You have to be in the same voice channel as the bot to use this command')
         return False
     return True
 
@@ -187,12 +187,12 @@ async def on_command_error(ctx: discord.ext.commands.Context, err: discord.ext.c
         return
 
     # we ran out of handlable exceptions, re-start. type_ and value are None for these
-    sys.stderr.write(f'unhandled command error raised, {err=}')
+    sys.stderr.write(f'Unhandled command error raised, {err=}')
     sp.run(['./restart'])
 
 @bot.event
 async def on_ready():
-    print(f'logged in successfully as {bot.user.name}')
+    print(f'Logged in successfully as {bot.user.name}')
 async def notify_about_failure(ctx: commands.Context, err: yt_dlp.utils.DownloadError):
     if BOT_REPORT_DL_ERROR:
         # remove shell colors for discord message
@@ -200,9 +200,9 @@ async def notify_about_failure(ctx: commands.Context, err: yt_dlp.utils.Download
         if sanitized[0:5].lower() == "error":
             # if message starts with error, strip it to avoid being redundant
             sanitized = sanitized[5:].strip(" :")
-        await ctx.send('failed to download due to error: {}'.format(sanitized))
+        await ctx.send('Failed to download due to error: {}'.format(sanitized))
     else:
-        await ctx.send('sorry, failed to download this video')
+        await ctx.send('Sorry, failed to download this video')
     return
 
 if __name__ == '__main__':
