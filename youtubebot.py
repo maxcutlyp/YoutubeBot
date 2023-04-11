@@ -22,8 +22,8 @@ BOT_REPORT_DL_ERROR = os.getenv('BOT_REPORT_DL_ERROR', '0').lower() in ('true', 
 try:
     COLOR = int(os.getenv('BOT_COLOR', 'ff0000'), 16)
 except ValueError:
-    print('the BOT_COLOR in .env is not a valid hex color')
-    print('using default color ff0000')
+    print('The BOT_COLOR in .env is not a valid hex color')
+    print('Using default color ff0000')
     COLOR = 0xff0000
 
 bot = commands.Bot(command_prefix=PREFIX, intents=discord.Intents(voice_states=True, guilds=True, guild_messages=True, message_content=True))
