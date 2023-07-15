@@ -188,6 +188,7 @@ async def on_command_error(ctx: discord.ext.commands.Context, err: discord.ext.c
 
     # we ran out of handlable exceptions, re-start. type_ and value are None for these
     sys.stderr.write(f'unhandled command error raised, {err=}')
+    sys.stderr.flush()
     sp.run(['./restart'])
 
 @bot.event
