@@ -32,9 +32,9 @@ A word of warning before we start though: you'll need somewhere to host the bot.
 3. Make sure you have Python 3.10 installed.
 4. Open up a console wherever you downloaded the code to (don't forget to unzip it if its zipped), and run `pip install -r requirements.txt`. Note that some systems will use `pip3` or `pip3.10` - use the one that contains `(python 3.10)` when you run it with `--version`.
 5. Clone the file ".env_example" and rename the copy to ".env"
-6. Head back to the "Bot" page. There should be a button called "Reset Token", click it and then press the new "Copy" button. This will copy your bot's unique token so that the code can identify itself as the bot you've just created.
+6. Head back to the "Bot" page. There should be a button called "Reset Token", click it and then press the newely appeared "Copy" button. This will copy your bot's unique token so that the code can identify itself as the bot you've just created.
 7. Edit ".env" and replace "your-token-goes-here" with the token you just copied.
 8. Run `nohup ./youtubebot.py &` on linux/unix and `python youtube.py` on windows (note that if you close the console your bot will stop). (for linux/unix: If you get an error along the lines of "permission denied" or "not executable", run `chmod +x youtubebot.py` to make it executable and try again.)
-9. The bot is now running in the background. To stop it, run `pkill -f youtubebot.py` on linux/unix or press `ctrl+c` while clicked into your console on windows.
+9. The bot is now running. To stop it, run `pkill -f youtubebot.py` on linux/unix or press `ctrl+c` while clicked into your console on windows.
 
 Congrats! You should now be able to use the bot by joining a VC and using the commands above. If not, let me know and I'll try to help as best I can.
