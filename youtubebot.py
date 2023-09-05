@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
 PREFIX = os.getenv('BOT_PREFIX', '.')
+YTDL_FORMAT = os.getenv('YTDL_FORMAT', 'worstaudio')
 PRINT_STACK_TRACE = os.getenv('PRINT_STACK_TRACE', '1').lower() in ('true', 't', '1')
 BOT_REPORT_COMMAND_NOT_FOUND = os.getenv('BOT_REPORT_COMMAND_NOT_FOUND', '1').lower() in ('true', 't', '1')
 BOT_REPORT_DL_ERROR = os.getenv('BOT_REPORT_DL_ERROR', '0').lower() in ('true', 't', '1')
@@ -96,7 +97,7 @@ async def play(ctx: commands.Context, *args):
     # source address as 0.0.0.0 to force ipv4 because ipv6 breaks it for some reason
     # this is equivalent to --force-ipv4 (line 312 of https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/options.py)
     await ctx.send(f'looking for `{query}`...')
-    with yt_dlp.YoutubeDL({'format': 'worstaudio',
+    with yt_dlp.YoutubeDL({'format': YTDL_FORMAT,
                            'source_address': '0.0.0.0',
                            'default_search': 'ytsearch',
                            'outtmpl': '%(id)s.%(ext)s',
