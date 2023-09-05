@@ -28,8 +28,8 @@ A word of warning before we start though: you'll need somewhere to host the bot.
 ### Step 3: Making it do stuff
 1. You now have a bot, and it's in your server, but it's not doing much. You'll want to do this bit on something that can be left on all the time, as I mentioned earlier.
 2. Download the code. You can do this by downloading the zip and unzipping it, or with a `git clone` command, or however you prefer to get GitHub content.
-3. Make sure you have Python 3.10 installed.
-4. Open up a console wherever you downloaded the code to (don't forget to unzip it if it's zipped), and run `pip install -r requirements.txt`. Note that some systems will use `pip3` or `pip3.10` - use the one that contains `(python 3.10)` when you run it with `--version`.
+3. Make sure you have Python 3.8 or later installed.
+4. Open up a console wherever you downloaded the code to (don't forget to unzip it if it's zipped), and run `pip install -r requirements.txt`
 5. Create a copy of the ".env_example" file named ".env"
 6. Head back to the "Bot" page. Click "Reset Token", then click "Copy". This will copy your bot's unique token so that the code can identify itself as the bot you've just created.
 7. Edit ".env" and replace "your-token-goes-here" with the token you just copied.
