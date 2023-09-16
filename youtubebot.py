@@ -97,23 +97,30 @@ async def play(ctx: commands.Context, *args):
     # source address as 0.0.0.0 to force ipv4 because ipv6 breaks it for some reason
     # this is equivalent to --force-ipv4 (line 312 of https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/options.py)
     await ctx.send(f'looking for `{query}`...')
-    with yt_dlp.YoutubeDL({'format': YTDL_FORMAT,
+    yt_dlp_config = {'format': YTDL_FORMAT,
                            'source_address': '0.0.0.0',
                            'default_search': 'ytsearch',
                            'outtmpl': '%(id)s.%(ext)s',
-                           'noplaylist': True,
-                           'allow_playlist_files': False,
+                           'noplaylist': False,
+                           'allow_playlist_files': True,
+                           'extract_flat': 'in_playlist',
                            # 'progress_hooks': [lambda info, ctx=ctx: video_progress_hook(ctx, info)],
                            # 'match_filter': lambda info, incomplete, will_need_search=will_need_search, ctx=ctx: start_hook(ctx, info, incomplete, will_need_search),
-                           'paths': {'home': f'./dl/{server_id}'}}) as ydl:
+                           'paths': {'home': f'./dl/{server_id}'}}
+    with yt_dlp.YoutubeDL(yt_dlp_config) as ydl:
         try:
             info = ydl.extract_info(query, download=False)
         except yt_dlp.utils.DownloadError as err:
             await notify_about_failure(ctx, err)
             return
 
-        if 'entries' in info:
+        reamaining_info = []
+        if 'entries' in info and len(info['entries']):
+            reamaining_info = info['entries'][1:]
             info = info['entries'][0]
+            query = info['url']
+
+
         # send link if it was a search, otherwise send title as sending link again would clutter chat with previews
         await ctx.send('downloading ' + (f'https://youtu.be/{info["id"]}' if will_need_search else f'`{info["title"]}`'))
         try:
@@ -122,21 +129,26 @@ async def play(ctx: commands.Context, *args):
             await notify_about_failure(ctx, err)
             return
         
-        path = f'./dl/{server_id}/{info["id"]}.{info["ext"]}'
+        path = f'./dl/{server_id}/{info["id"]}.{info.get("ext", "mp4")}'
         try: queues[server_id].append((path, info))
         except KeyError: # first in queue
             queues[server_id] = [(path, info)]
             try: connection = await voice_state.channel.connect()
             except discord.ClientException: connection = get_voice_client_from_channel_id(voice_state.channel.id)
             connection.play(discord.FFmpegOpusAudio(path), after=lambda error=None, connection=connection, server_id=server_id:
-                                                             after_track(error, connection, server_id))
+                                                             after_track(error, connection, server_id, yt_dlp_config, ctx))
+    if reamaining_info:
+        await ctx.send('queuing {} videos...'.format(len(reamaining_info)))
+        for entry in reamaining_info:
+            path = f'./dl/{server_id}/{entry["id"]}.{entry.get("ext", "mp4")}'
+            queues[server_id].append((path, entry))
 
 def get_voice_client_from_channel_id(channel_id: int):
     for voice_client in bot.voice_clients:
         if voice_client.channel.id == channel_id:
             return voice_client
 
-def after_track(error, connection, server_id):
+def after_track(error, connection, server_id, yt_dlp_config, ctx):
     if error is not None:
         print(error)
     try: path = queues[server_id].pop(0)[0]
@@ -144,8 +156,18 @@ def after_track(error, connection, server_id):
     if path not in [i[0] for i in queues[server_id]]: # check that the same video isn't queued multiple times
         try: os.remove(path)
         except FileNotFoundError: pass
-    try: connection.play(discord.FFmpegOpusAudio(queues[server_id][0][0]), after=lambda error=None, connection=connection, server_id=server_id:
-                                                                          after_track(error, connection, server_id))
+    try:
+        next_entry = queues[server_id][0]
+        if not os.path.isfile(next_entry[0]):
+            with yt_dlp.YoutubeDL(yt_dlp_config) as ydl:
+                try:
+                    ydl.download([next_entry[1]['url']])
+                except yt_dlp.utils.DownloadError as err:
+                    queues.pop(server_id) # directory will be deleted on disconnect
+                    asyncio.run_coroutine_threadsafe(safe_disconnect(connection), bot.loop).result()
+        asyncio.run_coroutine_threadsafe(ctx.send('Playing ' + next_entry[1]['title']), bot.loop)
+        connection.play(discord.FFmpegOpusAudio(next_entry[0]), after=lambda error=None, connection=connection, server_id=server_id:
+                                                                          after_track(error, connection, server_id, yt_dlp_config, ctx))
     except IndexError: # that was the last item in queue
         queues.pop(server_id) # directory will be deleted on disconnect
         asyncio.run_coroutine_threadsafe(safe_disconnect(connection), bot.loop).result()
