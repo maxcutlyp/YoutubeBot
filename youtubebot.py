@@ -124,10 +124,8 @@ async def play(ctx: commands.Context, *args):
         path = f'./dl/{server_id}/{info["id"]}.{info["ext"]}'
         try:
             queues[server_id]['queue'].append((path, info))
-            await ctx.send('MC HAMMER JUZ TO POBRAL I ZARAZ ODPALI')
         except KeyError: # first in queue
             queues[server_id] = {'queue': [(path, info)], 'loop': False}
-            await ctx.send('MC HAMMER JUZ TO POBRAL I ZARAZ ODPALI')
             try: connection = await voice_state.channel.connect()
             except discord.ClientException: connection = get_voice_client_from_channel_id(voice_state.channel.id)
             connection.play(discord.FFmpegOpusAudio(path), after=lambda error=None, connection=connection, server_id=server_id:
@@ -140,7 +138,7 @@ async def loop(ctx: commands.Context, *args):
     try:
         loop = queues[ctx.guild.id]['loop']
     except KeyError:
-        await ctx.send('glupolkuuu >.< nie ma co loopowac')
+        await ctx.send('there is no queue to loop')
         return
     queues[ctx.guild.id]['loop'] = not loop
 
