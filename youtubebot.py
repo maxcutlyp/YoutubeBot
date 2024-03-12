@@ -28,7 +28,7 @@ except ValueError:
     COLOR = 0xff0000
 
 bot = commands.Bot(command_prefix=PREFIX, intents=discord.Intents(voice_states=True, guilds=True, guild_messages=True, message_content=True))
-queues = {} # {server_id: [(vid_file, info), ...]}
+queues = {} # {server_id: 'queue': [(vid_file, info), ...], 'loop': bool}
 
 def main():
     if TOKEN is None:
@@ -40,7 +40,7 @@ def main():
 
 @bot.command(name='queue', aliases=['q'])
 async def queue(ctx: commands.Context, *args):
-    try: queue = queues[ctx.guild.id]
+    try: queue = queues[ctx.guild.id]['queue']
     except KeyError: queue = None
     if queue == None:
         await ctx.send('the bot isn\'t playing anything')
@@ -55,7 +55,7 @@ async def queue(ctx: commands.Context, *args):
 
 @bot.command(name='skip', aliases=['s'])
 async def skip(ctx: commands.Context, *args):
-    try: queue_length = len(queues[ctx.guild.id])
+    try: queue_length = len(queues[ctx.guild.id]['queue'])
     except KeyError: queue_length = 0
     if queue_length <= 0:
         await ctx.send('the bot isn\'t playing anything')
@@ -79,7 +79,7 @@ async def skip(ctx: commands.Context, *args):
 
     voice_client = get_voice_client_from_channel_id(ctx.author.voice.channel.id)
     for _ in range(n_skips - 1):
-        queues[ctx.guild.id].pop(0)
+        queues[ctx.guild.id]['queue'].pop(0)
     voice_client.stop()
 
 @bot.command(name='play', aliases=['p'])
@@ -121,15 +121,28 @@ async def play(ctx: commands.Context, *args):
         except yt_dlp.utils.DownloadError as err:
             await notify_about_failure(ctx, err)
             return
-        
         path = f'./dl/{server_id}/{info["id"]}.{info["ext"]}'
-        try: queues[server_id].append((path, info))
+        try:
+            queues[server_id]['queue'].append((path, info))
         except KeyError: # first in queue
-            queues[server_id] = [(path, info)]
+            queues[server_id] = {'queue': [(path, info)], 'loop': False}
             try: connection = await voice_state.channel.connect()
             except discord.ClientException: connection = get_voice_client_from_channel_id(voice_state.channel.id)
             connection.play(discord.FFmpegOpusAudio(path), after=lambda error=None, connection=connection, server_id=server_id:
                                                              after_track(error, connection, server_id))
+
+@bot.command('loop', aliases=['l'])
+async def loop(ctx: commands.Context, *args):
+    if not await sense_checks(ctx):
+        return
+    try:
+        loop = queues[ctx.guild.id]['loop']
+    except KeyError:
+        await ctx.send('there is no queue to loop')
+        return
+    queues[ctx.guild.id]['loop'] = not loop
+
+    await ctx.send('looping is now ' + ('on' if not loop else 'off'))
 
 def get_voice_client_from_channel_id(channel_id: int):
     for voice_client in bot.voice_clients:
@@ -139,12 +152,16 @@ def get_voice_client_from_channel_id(channel_id: int):
 def after_track(error, connection, server_id):
     if error is not None:
         print(error)
-    try: path = queues[server_id].pop(0)[0]
+    try:
+        last_video_path = queues[server_id]['queue'][0][0]
+        if not queues[server_id]['loop']:
+            os.remove(last_video_path)
+            queues[server_id]['queue'].pop(0)
     except KeyError: return # probably got disconnected
-    if path not in [i[0] for i in queues[server_id]]: # check that the same video isn't queued multiple times
-        try: os.remove(path)
+    if last_video_path not in [i[0] for i in queues[server_id]['queue']]: # check that the same video isn't queued multiple times
+        try: os.remove(last_video_path)
         except FileNotFoundError: pass
-    try: connection.play(discord.FFmpegOpusAudio(queues[server_id][0][0]), after=lambda error=None, connection=connection, server_id=server_id:
+    try: connection.play(discord.FFmpegOpusAudio(queues[server_id]['queue'][0][0]), after=lambda error=None, connection=connection, server_id=server_id:
                                                                           after_track(error, connection, server_id))
     except IndexError: # that was the last item in queue
         queues.pop(server_id) # directory will be deleted on disconnect
@@ -153,9 +170,9 @@ def after_track(error, connection, server_id):
 async def safe_disconnect(connection):
     if not connection.is_playing():
         await connection.disconnect()
-        
+
 async def sense_checks(ctx: commands.Context, voice_state=None) -> bool:
-    if voice_state is None: voice_state = ctx.author.voice 
+    if voice_state is None: voice_state = ctx.author.voice
     if voice_state is None:
         await ctx.send('you have to be in a voice channel to use this command')
         return False
